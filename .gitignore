@@ -5,4 +5,6 @@
 **/__pycache__/
 
 mask2former/modeling/pixel_decoder/ops/build
+mask2former/modeling/pixel_decoder/ops/dist
+mask2former/modeling/pixel_decoder/ops/MultiScaleDeformableAttention.egg-info
 detectron2_temp/
