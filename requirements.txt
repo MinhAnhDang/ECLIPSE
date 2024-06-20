@@ -13,4 +13,4 @@ tqdm
 fastremap
 opencv-python
 pandas
-monai[all]
+monai[all]==1.2.0
