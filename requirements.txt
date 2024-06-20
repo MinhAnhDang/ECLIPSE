@@ -8,3 +8,9 @@ scikit-image
 continuum
 wandb
 nibabel
+connected-components-3d
+tqdm
+fastremap
+opencv-python
+pandas
+monai[all]
