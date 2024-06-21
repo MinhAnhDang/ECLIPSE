@@ -17,7 +17,7 @@ DATASETS:
   TRAIN: ("my_btcv_sem_seg_train",)
   TEST: ("my_btcv_sem_seg_val",)
 SOLVER:
-  CHECKPOINT_PERIOD: 100
+  CHECKPOINT_PERIOD: 1000
   IMS_PER_BATCH: 2
   BASE_LR: 0.0001
   MAX_ITER: 160000
@@ -50,7 +50,7 @@ INPUT:
   FORMAT: "RGB"
   DATASET_MAPPER_NAME: "mask_former_semantic"
 TEST:
-  EVAL_PERIOD: 50
+  EVAL_PERIOD: 5000
   AUG:
     ENABLED: False
     MIN_SIZES: [256, 384, 512, 640, 768, 896]
