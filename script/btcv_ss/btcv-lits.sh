@@ -16,7 +16,7 @@ mask_weight=5.0
 class_weight=2.0
 
 base_lr=0.0001
-iter=16000
+iter=5000
 
 soft_mask=False # mask softmax (True) or sigmoid (False)
 soft_cls=False   # classifier softmax (True) or sigmoid( False)
@@ -29,7 +29,7 @@ weight_args="MODEL.MASK_FORMER.NUM_OBJECT_QUERIES ${base_queries} MODEL.MASK_FOR
 exp_name="btcv_13_2"
 
 comm_args="OUTPUT_DIR ${base} ${meth_args} ${step_args} ${weight_args}"
-inc_args="CONT.TASK 0 SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 50 SOLVER.CHECKPOINT_PERIOD 5000 SOLVER.MAX_ITER ${iter}"
+inc_args="CONT.TASK 0 SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 500 SOLVER.CHECKPOINT_PERIOD 500 SOLVER.MAX_ITER ${iter}"
 
 ## Train base classes
 ## You can skip this process if you have a step0-checkpoint.
