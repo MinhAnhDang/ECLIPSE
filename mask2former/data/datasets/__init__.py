@@ -11,4 +11,5 @@ from . import (
     register_myade20k,
     register_myade20k_panoptic,
     register_myade20k_instance,
+    register_btcv_sem,
 )
