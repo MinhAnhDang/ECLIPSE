@@ -366,16 +366,20 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         # prompt embeddings
         if self.num_prompts > 0:
             if self.clip_embedding:
+                print("Load CLIP embedding")
                 prompt_feat = []
                 embeds = torch.load("clip_text_embeds.pt")
+                print(embeds)
                 prompt_dims = np.cumsum(classes)
                 for index in range(1, len(prompt_dims)):
                     prompt_feat.append(nn.Embedding.from_pretrained(embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :]))
-                prompt_feat = nn.ModuleList(prompt_feat)
+                self.prompt_feat = nn.ModuleList(prompt_feat)
+                print(self.prompt_feat)
             else:
                 self.prompt_feat = nn.ModuleList(
                     [nn.Embedding(num_prompts, hidden_dim) for _ in classes[1:]]
                 )
+                # print(prompt_feat)
             
             if self.prompt_deep:
                 self.prompt_embed = nn.ModuleList(

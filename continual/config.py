@@ -39,6 +39,7 @@ def add_continual_config(cfg):
     
     # Parameters for ECLIPSE
     cfg.CONT.NUM_PROMPTS = 10
+    cfg.CONT.CLIP_EMBEDDING = False
     cfg.CONT.SOFTCLS = True
     cfg.CONT.BACKBONE_FREEZE = False
     cfg.CONT.CLS_HEAD_FREEZE = False
