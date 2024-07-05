@@ -64,9 +64,3 @@
 #         name = f"{img_name}_{str(slice).zfill(3)}"
 #         save_slice_as_grayscale(slice_data, output_dir, name)
 #         print(f"Saving {name} to {output_dir}.")
-
-import torch
-clip_pretrained_feat = torch.load("clip_text_embeds.pt")
-self.prompt_feat = nn.ModuleList(
-    [nn.Embedding.from_pretrained(clip_pretrained_feat[classes[index]:classes[index+1],:]) for index in range(len(classes[1:]))]
-)
