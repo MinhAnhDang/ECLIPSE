@@ -34,7 +34,7 @@ inc_args="CONT.TASK 0 SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 5000 SOLVER.CHE
 
 ## Train base classes
 ## You can skip this process if you have a step0-checkpoint.
-python train_inc.py --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} NAME ${exp_name} WANDB False
+# python train_inc.py --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} NAME ${exp_name} WANDB False
 
 # --------------------------------------
 
@@ -54,7 +54,7 @@ pixel_decoder_freeze=True
 cls_head_freeze=True
 mask_head_freeze=True
 query_embed_freeze=True
-clip_embedding=False
+clip_embedding=True
 
 prompt_deep=True
 prompt_mask_mlp=True
