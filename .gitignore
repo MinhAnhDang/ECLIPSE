@@ -3,6 +3,8 @@
 **/results
 **/.ipynb_checkpoints/
 **/__pycache__/
+RawData/
+
 
 mask2former/modeling/pixel_decoder/ops/build
 mask2former/modeling/pixel_decoder/ops/dist

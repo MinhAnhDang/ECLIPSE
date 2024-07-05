@@ -261,6 +261,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         enforce_input_project: bool,
         num_prompts: int,
         prompt_deep: bool = False,
+        clip_embedding: bool=False,
         softmask: bool = False,
         inc_query: Optional[bool] = None,
         cosine: Optional[bool] = False,
@@ -346,6 +347,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         self.prompt_deep = prompt_deep and self.num_prompts > 0
         self.prompt_mask_mlp = prompt_mask_mlp and self.num_prompts > 0
         self.prompt_no_obj_mlp = prompt_no_obj_mlp and self.num_prompts > 0
+        self.clip_embedding = clip_embedding
         
         self.deltas = deltas
         if self.deltas is None:
@@ -363,9 +365,17 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         
         # prompt embeddings
         if self.num_prompts > 0:
-            self.prompt_feat = nn.ModuleList(
-                [nn.Embedding(num_prompts, hidden_dim) for _ in classes[1:]]
-            )
+            if self.clip_embedding:
+                prompt_feat = []
+                embeds = torch.load("clip_text_embeds.pt")
+                prompt_dims = np.cumsum(classes)
+                for index in range(1, len(prompt_dims)):
+                    prompt_feat.append(nn.Embedding.from_pretrained(embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :]))
+                prompt_feat = nn.ModuleList(prompt_feat)
+            else:
+                self.prompt_feat = nn.ModuleList(
+                    [nn.Embedding(num_prompts, hidden_dim) for _ in classes[1:]]
+                )
             
             if self.prompt_deep:
                 self.prompt_embed = nn.ModuleList(
@@ -451,6 +461,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             # Parameters for ECLIPSE
             ret['num_prompts'] = cfg.CONT.NUM_PROMPTS
             ret['prompt_deep'] = cfg.CONT.PROMPT_DEEP
+            ret['clip_embedding'] = cfg.CONT.CLIP_EMBEDDING
             ret['prompt_mask_mlp'] = cfg.CONT.PROMPT_MASK_MLP
             ret['prompt_no_obj_mlp'] = cfg.CONT.PROMPT_NO_OBJ_MLP
             ret['deltas'] = cfg.CONT.LOGIT_MANI_DELTAS
