@@ -137,10 +137,10 @@ class IncrementalTrainer(TrainerBase):
         ECLIPSE: initialization
         """
         if self.cfg.CONT.NUM_PROMPTS > 0:
-            self.model.copy_prompt_embed_weights()
-            self.model.copy_mask_embed_weights()
-            self.model.copy_no_obj_weights()
-            self.model.copy_prompt_trans_decoder_weights()
+            self.model.module.copy_prompt_embed_weights()
+            self.model.module.copy_mask_embed_weights()
+            self.model.module.copy_no_obj_weights()
+            self.model.module.copy_prompt_trans_decoder_weights()
         
         if self.model_old is not None:
             # We never want to resume it! Resume = False even when loading from checkpoint.

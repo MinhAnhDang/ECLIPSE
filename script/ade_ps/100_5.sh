@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export DETECTRON2_DATASETS=YOUR_DATA_ROOT
+# export DETECTRON2_DATASETS=YOUR_DATA_ROOT
 ngpus=$(nvidia-smi --list-gpus | wc -l)
 
 cfg_file=configs/ade20k/panoptic-segmentation/maskformer2_R50_bs16_160k.yaml

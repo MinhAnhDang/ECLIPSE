@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export DETECTRON2_DATASETS=YOUR_DATA_ROOT
+# export DETECTRON2_DATASETS=YOUR_DATA_ROOT
 ngpus=$(nvidia-smi --list-gpus | wc -l)
 
 cfg_file=configs/ade20k/panoptic-segmentation/maskformer2_R50_bs16_160k.yaml
@@ -85,4 +85,4 @@ vpt_args="CONT.BACKBONE_FREEZE ${backbone_freeze} CONT.CLS_HEAD_FREEZE ${cls_hea
 
 inc_args="CONT.TASK 1 CONT.WEIGHTS results/ade_ps_100_50_final.pth"
 
-python train_inc.py --eval-only --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} ${cont_args} ${dist_args} ${vpt_args} NAME ${exp_name} WANDB False
+# python train_inc.py --eval-only --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} ${cont_args} ${dist_args} ${vpt_args} NAME ${exp_name} WANDB False
