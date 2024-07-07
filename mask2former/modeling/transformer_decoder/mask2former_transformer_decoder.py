@@ -372,7 +372,8 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 print(embeds)
                 prompt_dims = np.cumsum(classes)
                 for index in range(1, len(prompt_dims)):
-                    prompt_feat.append(nn.Embedding.from_pretrained(embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :]))
+                    pretrained_feat = embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :] if (classes[1] - classes[0]) > 5 else embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :]*2
+                    prompt_feat.append(nn.Embedding.from_pretrained(pretrained_feat))
                 self.prompt_feat = nn.ModuleList(prompt_feat)
                 print(self.prompt_feat)
             else:
