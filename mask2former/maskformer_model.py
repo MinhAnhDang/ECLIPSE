@@ -147,6 +147,7 @@ class MaskFormer(nn.Module):
             if not cfg.MODEL.MASK_FORMER.PER_PIXEL or not cfg.MODEL.MASK_FORMER.TEST.SEMANTIC_ON:
                 # Loss parameters:
                 criterion = setup_mask_criterion(cfg, sem_seg_head.num_classes)
+                print(criterion)
             else:
                 criterion = nn.CrossEntropyLoss(reduction='mean', ignore_index=meta.ignore_label)
         else:

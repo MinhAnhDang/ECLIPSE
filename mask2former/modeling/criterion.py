@@ -61,8 +61,8 @@ def setup_mask_criterion(cfg, num_classes):
     mask_weight = cx.MASK_WEIGHT
     router_weight = cv.ROUTER_WEIGHT
 
-    # building criterion
-    print(cx.SOFTMASK)
+    # buil'ding criterion
+    print("Softmask", cx.SOFTMASK)
     if cx.SOFTMASK:
         matcher = SoftmaxMatcher(
             cost_class=class_weight,
