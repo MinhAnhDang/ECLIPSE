@@ -62,6 +62,7 @@ def setup_mask_criterion(cfg, num_classes):
     router_weight = cv.ROUTER_WEIGHT
 
     # building criterion
+    print(cx.SOFTMASK)
     if cx.SOFTMASK:
         matcher = SoftmaxMatcher(
             cost_class=class_weight,
@@ -78,7 +79,7 @@ def setup_mask_criterion(cfg, num_classes):
         )
 
     weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight, "loss_router": router_weight}
-
+    print(weight_dict)
     if deep_supervision:
         dec_layers = cfg.MODEL.MASK_FORMER.DEC_LAYERS
         aux_weight_dict = {}
