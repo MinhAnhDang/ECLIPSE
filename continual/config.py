@@ -52,4 +52,5 @@ def add_continual_config(cfg):
     cfg.CONT.PROMPT_NO_OBJ_MLP = False
     cfg.CONT.DEEP_CLS = False
     cfg.CONT.LOGIT_MANI_DELTAS = None
+    cfg.MODEL.MASK_FORMER.PROMPT_SELECT=True
     
