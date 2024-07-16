@@ -528,19 +528,19 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         output = self.query_feat.weight.unsqueeze(1).repeat(1, bs, 1)
                 
         #Select prompt for each image
-        print(self.prompt_select)
+        # print(self.prompt_select)
         if self.prompt_select:
             selected_logits = []
-            print("features shape",x[0].shape)
+            # print("features shape",x[0].shape)
             for i in range(self.num_feature_levels):
                 selected_logits.append(self.base_router(x[i]).view(bs, -1, 1).unsqueeze(0))
             selected_logits = torch.cat(selected_logits, dim=0)
-            print("selected_logits shape:",selected_logits.shape)
+            # print("selected_logits shape:",selected_logits.shape)
             selected_logits = torch.mean(selected_logits, dim=0).sigmoid() 
             
             selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1) #NQ1->QN1
-            print(selected_prompt_mask.shape)
-            print("query shape:",query_embed.shape)
+            # print(selected_prompt_mask.shape)
+            # print("query shape:",query_embed.shape)
             
             query_embed = query_embed*selected_prompt_mask
             output = output*selected_prompt_mask
@@ -618,7 +618,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         if self.prompt_select:
             selected_logits = []
             for i in range(self.num_feature_levels):
-                selected_logits.append(self.prompt_router[-1](x[i]).view(bs, -1, 1))
+                selected_logits.append(self.prompt_router[-1](x[i]).view(bs, -1, 1).unsqueeze(0))
             selected_logits = torch.cat(selected_logits, dim=0)
             selected_logits = torch.mean(selected_logits, dim=0).sigmoid() 
             selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
@@ -727,10 +727,10 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             )
         
         for i in range (self.num_feature_levels):
-            selected_logit = self.base_router(x[i]).view(bs, -1, 1)
+            selected_logit = self.base_router(x[i]).view(bs, -1, 1).unsqueeze(0)
             selected_logit =  torch.cat([
                 selected_logit,
-                torch.cat([p_router(x[i]).view(bs, -1, 1) for p_router in self.prompt_router], dim=1)
+                torch.cat([p_router(x[i]).view(bs, -1, 1).unsqueeze(0) for p_router in self.prompt_router], dim=1)
             ], dim=1)
             selected_logits.append(selected_logit)
         selected_logits = torch.cat(selected_logits, dim=0)
