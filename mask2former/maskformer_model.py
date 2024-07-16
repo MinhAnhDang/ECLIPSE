@@ -558,10 +558,10 @@ class MaskFormer(nn.Module):
         
         # scores : [N, C]
         # max_s : [N, ]
-#         max_s = scores.max(dim=-1)[0]
+        # max_s = scores.max(dim=-1)[0]
         
-#         keep = (max_s > 0.05)
-#         scores = scores[keep]
+        # keep = (max_s > 0.05)
+        # scores = scores[keep]
 
         if self.softmask:
             mask_pred = mask_pred.softmax(dim=0)

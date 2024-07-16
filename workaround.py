@@ -64,3 +64,23 @@
 #         name = f"{img_name}_{str(slice).zfill(3)}"
 #         save_slice_as_grayscale(slice_data, output_dir, name)
 #         print(f"Saving {name} to {output_dir}.")
+import torch
+import torch.nn as nn
+import numpy as np
+classes = [100, 10, 10, 10,10]
+qdims = np.cumsum([0, 100]+[10]*4)
+
+# print(qdims)
+prompt_no_obj_embed = nn.ModuleList([nn.Linear(256, 1) for _ in classes[1:]])
+class_embed = nn.Linear(256, 150 + 1)
+prompt_feat = nn.ModuleList([nn.Embedding(10, 256) for _ in classes[1:]])
+for n in range(1, len(classes)-1):
+    # print(n)
+    print(prompt_feat[-1].weight.unsqueeze(1).shape)
+    # prompt = prompt_feat[-1].weight.unsqueeze(1).repeat(1,2,1).transpose(0,1)
+    # print(prompt.shape)
+    # outputs_classes = class_embed(prompt)
+    # no_obj_logit = prompt_no_obj_embed[n-1](prompt)
+    # print(no_obj_logit.shape)
+    # # outputs_classes[:, qdims[n]:qdims[n+1], -1] = no_obj_logit[:, :, 0]
+    # print(outputs_classes.shape)

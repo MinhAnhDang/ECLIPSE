@@ -28,6 +28,10 @@ def focal_loss(inputs, targets, alpha=10, gamma=2, reduction='mean', ignore_inde
         f_loss = f_loss.mean()
     return f_loss
 
+def router_loss(selected_logits, selected_prompt_mask):
+    negative_logits = 1- selected_logits
+    selected_logits = selected_logits*selected_prompt_mask+negative_logits*(1-selected_prompt_mask)
+    return torch.sum(1-selected_logits)
 
 def calculate_uncertainty(logits):
     """
@@ -55,6 +59,7 @@ def setup_mask_criterion(cfg, num_classes):
     class_weight = cx.CLASS_WEIGHT
     dice_weight = cx.DICE_WEIGHT
     mask_weight = cx.MASK_WEIGHT
+    router_weight = cv.ROUTER_WEIGHT
 
     # building criterion
     if cx.SOFTMASK:
@@ -72,7 +77,7 @@ def setup_mask_criterion(cfg, num_classes):
             num_points=cfg.MODEL.MASK_FORMER.TRAIN_NUM_POINTS,
         )
 
-    weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight}
+    weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight, "loss_routers": router_weight}
 
     if deep_supervision:
         dec_layers = cfg.MODEL.MASK_FORMER.DEC_LAYERS
@@ -82,7 +87,7 @@ def setup_mask_criterion(cfg, num_classes):
         # weight_dict['loss_ce_0'] = 0.
         weight_dict.update(aux_weight_dict)
 
-    losses = ["labels", "masks"]
+    losses = ["labels", "masks", "routers"]
 
     criterion = SoftmaxCriterion if cx.SOFTMASK else SetCriterion
 
@@ -209,6 +214,16 @@ class SetCriterion(nn.Module):
         del target_masks
         return losses
 
+    def loss_routers(self, outputs):
+        assert "selected_logits" in outputs
+        assert "selected_prompt_mask" in outputs
+        
+        selected_logits = outputs["selected_logits"]
+        selected_prompt_mask = outputs["selected_prompt_mask"]
+        loss_router = router_loss(selected_logits, selected_prompt_mask)
+        losses = {"loss_router": loss_router}
+        return losses
+        
     def _get_src_permutation_idx(self, indices):
         # permute predictions following indices
         batch_idx = torch.cat([torch.full_like(src, i) for i, (src, _) in enumerate(indices)])
@@ -225,6 +240,7 @@ class SetCriterion(nn.Module):
         loss_map = {
             'labels': self.loss_labels,
             'masks': self.loss_masks,
+            'routers': self.loss_routers
         }
         assert loss in loss_map, f"do you really want to compute {loss} loss?"
         return loss_map[loss](outputs, targets, indices, num_masks)

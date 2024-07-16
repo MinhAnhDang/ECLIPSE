@@ -261,7 +261,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         enforce_input_project: bool,
         num_prompts: int,
         prompt_deep: bool = False,
-        clip_embedding: bool=False,
+        prompt_select: bool=False,
         softmask: bool = False,
         inc_query: Optional[bool] = None,
         cosine: Optional[bool] = False,
@@ -341,13 +341,18 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         self.query_feat = nn.Embedding(num_queries, hidden_dim)
         # learnable query p.e.
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
+        #Router for image-wise seletecting prompts
+        self.base_router = nn.Sequential(
+            nn.Conv2d(hidden_dim, num_queries, kernel_size=3),
+            nn.AdaptiveAvgPool2d((1,1))
+        )
         
         # Parameters for ECLIPSE
         self.num_prompts = num_prompts
         self.prompt_deep = prompt_deep and self.num_prompts > 0
         self.prompt_mask_mlp = prompt_mask_mlp and self.num_prompts > 0
         self.prompt_no_obj_mlp = prompt_no_obj_mlp and self.num_prompts > 0
-        self.clip_embedding = clip_embedding
+        self.prompt_select = prompt_select
         
         self.deltas = deltas
         if self.deltas is None:
@@ -365,21 +370,29 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         
         # prompt embeddings
         if self.num_prompts > 0:
-            if self.clip_embedding:
-                print("Load CLIP embedding")
-                prompt_feat = []
-                embeds = torch.load("clip_text_embeds.pt")
-                print(embeds)
-                prompt_dims = np.cumsum(classes)
-                for index in range(1, len(prompt_dims)):
-                    pretrained_feat = embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :] if (classes[1] - classes[0]) > 5 else embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :]*2
-                    prompt_feat.append(nn.Embedding.from_pretrained(pretrained_feat))
-                self.prompt_feat = nn.ModuleList(prompt_feat)
-                print(self.prompt_feat)
-            else:
-                self.prompt_feat = nn.ModuleList(
-                    [nn.Embedding(num_prompts, hidden_dim) for _ in classes[1:]]
-                )
+            # if self.clip_embedding:
+            #     print("Load CLIP embedding")
+            #     prompt_feat = []
+            #     embeds = torch.load("clip_text_embeds.pt")
+            #     print(embeds)
+            #     prompt_dims = np.cumsum(classes)
+            #     for index in range(1, len(prompt_dims)):
+            #         pretrained_feat = embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :] if (classes[1] - classes[0]) > 5 else embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :]*2
+            #         prompt_feat.append(nn.Embedding.from_pretrained(pretrained_feat))
+            #     self.prompt_feat = nn.ModuleList(prompt_feat)
+            #     print(self.prompt_feat)
+            # else:
+            if self.prompt_select:
+                self.prompt_router = nn.ModuleList([
+                    nn.Sequential(
+                        nn.Conv2d(hidden_dim, num_prompts, kernel_size=3),
+                        nn.AdaptiveAvgPool2d((1,1))
+                    )
+                for _ in classes[1:]])
+                
+            self.prompt_feat = nn.ModuleList(
+                [nn.Embedding(num_prompts, hidden_dim) for _ in classes[1:]]
+            )
                 # print(prompt_feat)
             
             if self.prompt_deep:
@@ -451,6 +464,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         ret["in_channels"] = in_channels
         ret["mask_classification"] = mask_classification
         ret["softmask"] = cfg.MODEL.MASK_FORMER.SOFTMASK
+        ret["prompt_select"] = cfg.MODEL.MASK_FORMER.PROMPT_SELECT
 
         if hasattr(cfg, "CONT"):
             ret['inc_query'] = cfg.CONT.INC_QUERY
@@ -466,7 +480,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             # Parameters for ECLIPSE
             ret['num_prompts'] = cfg.CONT.NUM_PROMPTS
             ret['prompt_deep'] = cfg.CONT.PROMPT_DEEP
-            ret['clip_embedding'] = cfg.CONT.CLIP_EMBEDDING
+            # ret['clip_embedding'] = cfg.CONT.CLIP_EMBEDDING
             ret['prompt_mask_mlp'] = cfg.CONT.PROMPT_MASK_MLP
             ret['prompt_no_obj_mlp'] = cfg.CONT.PROMPT_NO_OBJ_MLP
             ret['deltas'] = cfg.CONT.LOGIT_MANI_DELTAS
@@ -495,6 +509,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         ret["enforce_input_project"] = cfg.MODEL.MASK_FORMER.ENFORCE_INPUT_PROJ
 
         ret["mask_dim"] = cfg.MODEL.SEM_SEG_HEAD.MASK_DIM
+        
 
         return ret
     
@@ -511,7 +526,20 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         # QxNxC
         query_embed = self.query_embed.weight.unsqueeze(1).repeat(1, bs, 1)
         output = self.query_feat.weight.unsqueeze(1).repeat(1, bs, 1)
-
+                
+        #Select prompt for each image
+        print(self.prompt_select)
+        if self.prompt_select:
+            selected_logits = []
+            for i in range(self.num_feature_levels):
+                selected_logits.append(self.base_router(x[i]).view(bs, -1, 1))
+            selected_logits = torch.cat(selected_logits, dim=0)
+            selected_logits = torch.mean(selected_logits, dim=0).sigmoid() 
+            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1) #BQ1->QB1
+        
+            query_embed = query_embed*selected_prompt_mask
+            output = output*selected_prompt_mask
+        
         # prediction heads on learnable query features
         outputs_class, outputs_mask, attn_mask = self.forward_prediction_heads(
             output, self.class_embed, self.mask_embed, mask_features, 
@@ -558,6 +586,8 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             'aux_outputs': self._set_aux_loss(
                 predictions_class if self.mask_classification else None, predictions_mask
             ),
+            'selected_logits': selected_logits,
+            'selected_prompt_mask': selected_prompt_mask,
             # 'query': query_feat,
             'features': mask_features
         }
@@ -572,14 +602,23 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         _, bs, _ = src[0].shape
         predictions_class = []
         predictions_mask = []
-
+        selected_prompt_mask = None
+        
         if self.num_prompts > 0 and self.prompt_no_obj_mlp:
             query_dims = np.cumsum([0, self.num_queries] + [self.num_prompts] * len(self.prompt_embed))
         else:
             query_dims = None
             
         output_p = self.prompt_feat[-1].weight.unsqueeze(1).repeat(1, bs, 1)
-
+        if self.prompt_select:
+            selected_logits = []
+            for i in range(self.num_feature_levels):
+                selected_logits.append(self.prompt_router[-1](x[i]).view(bs, -1, 1))
+            selected_logits = torch.cat(selected_logits, dim=0)
+            selected_logits = torch.mean(selected_logits, dim=0).sigmoid() 
+            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
+            output_p = output_p*selected_prompt_mask
+            
         # prediction heads on learnable query features
         outputs_class_p, outputs_mask_p, attn_mask_p = self.forward_prediction_heads(
             output_p, 
@@ -593,12 +632,16 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         predictions_class.append(outputs_class_p)
         predictions_mask.append(outputs_mask_p)
 
+        
         for i in range(self.num_layers):
             if self.prompt_deep:
                 prompt_embed = self.prompt_embed[-1][i].weight.unsqueeze(1).repeat(1, bs, 1)
             else:
                 prompt_embed = self.prompt_embed[-1].weight.unsqueeze(1).repeat(1, bs, 1)
-
+            
+            if selected_prompt_mask is not None:
+                prompt_embed = prompt_embed*selected_prompt_mask
+                
             level_index = i % self.num_feature_levels
             attn_mask_p[torch.where(attn_mask_p.sum(-1) == attn_mask_p.shape[-1])] = False
 
@@ -640,6 +683,8 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             'aux_outputs': self._set_aux_loss(
                 predictions_class if self.mask_classification else None, predictions_mask
             ),
+            'selected_logits': selected_logits,
+            'selected_prompt_mask': selected_prompt_mask,
             # 'query': query_feat,
             'features': mask_features
         }
@@ -655,6 +700,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         
         predictions_class = []
         predictions_mask = []
+        selected_logits = []
         
         if self.num_prompts > 0:
             mask_embeds = nn.ModuleList([self.mask_embed])
@@ -674,6 +720,18 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                     torch.cat([p.weight.unsqueeze(1).repeat(1, bs, 1) for p in self.prompt_feat], dim=0)
                 ], dim=0
             )
+        
+        for i in range (self.num_feature_levels):
+            selected_logit = self.base_router(x[i]).view(bs, -1, 1)
+            selected_logit =  torch.cat([
+                selected_logit,
+                torch.cat([p_router(x[i]).view(bs, -1, 1) for p_router in self.prompt_router], dim=1)
+            ], dim=1)
+            selected_logits.append(selected_logit)
+        selected_logits = torch.cat(selected_logits, dim=0)
+        selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
+        selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
+        output = output*selected_prompt_mask
         
         # prediction heads on learnable query features
         outputs_class, outputs_mask, attn_mask = self.forward_prediction_heads(
@@ -706,7 +764,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                             torch.cat([p.weight.unsqueeze(1).repeat(1, bs, 1) for p in self.prompt_embed], dim=0)
                         ], dim=0
                     )
-            
+            query_embed = query_embed*selected_prompt_mask
             level_index = i % self.num_feature_levels
             attn_mask[torch.where(attn_mask.sum(-1) == attn_mask.shape[-1])] = False
 
@@ -752,6 +810,8 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         out = {
             'pred_logits': predictions_class[-1],
             'pred_masks': predictions_mask[-1],
+            'selected_logits': selected_logits,
+            'selected_prompt_mask': selected_prompt_mask
             #'aux_outputs': self._set_aux_loss(
             #    predictions_class if self.mask_classification else None, predictions_mask
             #),
