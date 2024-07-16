@@ -32,9 +32,9 @@ exp_name="adps_100_50"
 comm_args="OUTPUT_DIR ${base} ${meth_args} ${step_args} ${weight_args}"
 inc_args="CONT.TASK 0 SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 5000 SOLVER.CHECKPOINT_PERIOD 5000 SOLVER.MAX_ITER ${iter}"
 
-## Train base classes
-## You can skip this process if you have a step0-checkpoint.
-# python train_inc.py --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} NAME ${exp_name} WANDB False
+# Train base classes
+# You can skip this process if you have a step0-checkpoint.
+python train_inc.py --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} NAME ${exp_name} WANDB False
 
 
 # --------------------------------------
