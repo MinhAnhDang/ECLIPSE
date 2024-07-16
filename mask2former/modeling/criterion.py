@@ -77,7 +77,7 @@ def setup_mask_criterion(cfg, num_classes):
             num_points=cfg.MODEL.MASK_FORMER.TRAIN_NUM_POINTS,
         )
 
-    weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight, "loss_routers": router_weight}
+    weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight, "loss_dice": dice_weight, "loss_router": router_weight}
 
     if deep_supervision:
         dec_layers = cfg.MODEL.MASK_FORMER.DEC_LAYERS
@@ -281,7 +281,7 @@ class SetCriterion(nn.Module):
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_masks)
                     l_dict = {k + f"_{i}": v for k, v in l_dict.items()}
                     losses.update(l_dict)
-
+        print(losses)
         return losses
 
     def __repr__(self):
