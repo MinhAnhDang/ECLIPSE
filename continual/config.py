@@ -53,4 +53,4 @@ def add_continual_config(cfg):
     cfg.CONT.DEEP_CLS = False
     cfg.CONT.LOGIT_MANI_DELTAS = None
     cfg.MODEL.MASK_FORMER.PROMPT_SELECT=True
-    
+    cfg.MODEL.MASK_FORMER.ROUTER_WEIGHT=1.0
