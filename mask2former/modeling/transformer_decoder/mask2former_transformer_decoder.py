@@ -531,7 +531,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         print(self.prompt_select)
         if self.prompt_select:
             selected_logits = []
-            print("features shape",x.shape)
+            print("features shape",x[0].shape)
             for i in range(self.num_feature_levels):
                 selected_logits.append(self.base_router(x[i]).view(bs, -1, 1))
             selected_logits = torch.cat(selected_logits, dim=0)
