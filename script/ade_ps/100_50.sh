@@ -15,6 +15,8 @@ base_queries=100
 dice_weight=5.0
 mask_weight=5.0
 class_weight=2.0
+router_weight=1.0
+prompt_select=True
 
 base_lr=0.0001
 iter=160000
@@ -25,7 +27,7 @@ soft_cls=False   # classifier softmax (True) or sigmoid( False)
 num_prompts=0
 deep_cls=True
 
-weight_args="MODEL.MASK_FORMER.NUM_OBJECT_QUERIES ${base_queries} MODEL.MASK_FORMER.DICE_WEIGHT ${dice_weight} MODEL.MASK_FORMER.MASK_WEIGHT ${mask_weight} MODEL.MASK_FORMER.CLASS_WEIGHT ${class_weight} MODEL.MASK_FORMER.SOFTMASK ${soft_mask} CONT.SOFTCLS ${soft_cls} CONT.NUM_PROMPTS ${num_prompts} CONT.DEEP_CLS ${deep_cls}"
+weight_args="MODEL.MASK_FORMER.PROMPT_SELECT ${prompt_select} MODEL.MASK_FORMER.NUM_OBJECT_QUERIES ${base_queries} MODEL.MASK_FORMER.DICE_WEIGHT ${dice_weight} MODEL.MASK_FORMER.MASK_WEIGHT ${mask_weight} MODEL.MASK_FORMER.CLASS_WEIGHT ${class_weight} MODEL.MASK_FORMER.ROUTER_WEIGHT ${router_weight} MODEL.MASK_FORMER.SOFTMASK ${soft_mask} CONT.SOFTCLS ${soft_cls} CONT.NUM_PROMPTS ${num_prompts} CONT.DEEP_CLS ${deep_cls}"
 
 exp_name="adps_100_50"
 
