@@ -535,8 +535,10 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 selected_logits.append(self.base_router(x[i]).view(bs, -1, 1))
             selected_logits = torch.cat(selected_logits, dim=0)
             selected_logits = torch.mean(selected_logits, dim=0).sigmoid() 
-            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1) #BQ1->QB1
-        
+            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1) #NQ1->QN1
+            print(selected_prompt_mask.shape)
+            print(query_embed.shape)
+            
             query_embed = query_embed*selected_prompt_mask
             output = output*selected_prompt_mask
         
