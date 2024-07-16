@@ -209,7 +209,8 @@ class MaskFormer(nn.Module):
 
         # bipartite matching-based loss
         losses = self.criterion(outputs, targets)
-
+        print("loss",losses)
+        print("weight_dict", self.criterion.weight_dict)
         for k in list(losses.keys()):
             if k in self.criterion.weight_dict:
                 losses[k] *= self.criterion.weight_dict[k]
