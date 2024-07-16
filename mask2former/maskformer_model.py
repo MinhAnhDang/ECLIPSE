@@ -637,6 +637,8 @@ class MaskFormer(nn.Module):
                     p.requires_grad = True
                 for k, p in self.sem_seg_head.predictor.prompt_embed[-1].named_parameters():
                     p.requires_grad = True
+                for k, p in self.sem_seg_head.predictor.prompt_router[-1].named_parameters():
+                    p.requires_grad = True
                 
             if not self.backbone_freeze:
                 for k, p in self.backbone.named_parameters():
@@ -701,7 +703,9 @@ class MaskFormer(nn.Module):
             base_embed_weights = base_embed_weights.mean(0, keepdims=True).repeat(self.num_prompts, 1)
             
             self.sem_seg_head.predictor.prompt_feat[-1].load_state_dict({"weight": base_feat_weights})
-            
+            self.sem_seg_head.predictor.prompt_router[-1].load_state_dict(
+                self.sem_seg_head.predictor.base_router.state_dict()
+            )
             if isinstance(self.sem_seg_head.predictor.prompt_embed[-1], nn.ModuleList):
                 embed_dict = {}
                 for n in range(len(self.sem_seg_head.predictor.prompt_embed[-1])):
