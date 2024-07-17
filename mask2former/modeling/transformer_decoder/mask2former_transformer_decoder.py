@@ -592,7 +592,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 predictions_class if self.mask_classification else None, predictions_mask
             ),
             'selected_logits': selected_logits,
-            'selected_prompt_mask': selected_prompt_mask,
+            'selected_prompt_mask': selected_prompt_mask.transpose(0,1),
             # 'query': query_feat,
             'features': mask_features
         }
@@ -690,7 +690,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 predictions_class if self.mask_classification else None, predictions_mask
             ),
             'selected_logits': selected_logits,
-            'selected_prompt_mask': selected_prompt_mask,
+            'selected_prompt_mask': selected_prompt_mask.transpose(0,1),
             # 'query': query_feat,
             'features': mask_features
         }
@@ -818,7 +818,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             'pred_logits': predictions_class[-1],
             'pred_masks': predictions_mask[-1],
             'selected_logits': selected_logits,
-            'selected_prompt_mask': selected_prompt_mask,
+            'selected_prompt_mask': selected_prompt_mask.transpose(0,1),
             #'aux_outputs': self._set_aux_loss(
             #    predictions_class if self.mask_classification else None, predictions_mask
             #),

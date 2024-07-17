@@ -169,6 +169,7 @@ class KDSetCriterion(SetCriterion):
             selected_logits = outputs["selected_logits"]
             # print("Selected_logits requires_grad: ", selected_logits.requires_grad)
             selected_prompt_mask = outputs["selected_prompt_mask"]
+            print(selected_logits.shape, selected_prompt_mask.shape)
             loss_router = router_loss(selected_logits, selected_prompt_mask)
             losses = {"loss_router": loss_router}
         # print("loss_router", losses)
