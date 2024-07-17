@@ -36,7 +36,7 @@ inc_args="CONT.TASK 0 SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 5000 SOLVER.CHE
 
 # Train base classes
 # You can skip this process if you have a step0-checkpoint.
-python train_router.py --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} NAME ${exp_name} WANDB False
+python train_inc.py --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} NAME ${exp_name} WANDB False
 
 
 # --------------------------------------
