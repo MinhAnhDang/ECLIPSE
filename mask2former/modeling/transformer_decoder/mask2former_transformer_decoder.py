@@ -596,6 +596,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             # 'query': query_feat,
             'features': mask_features
         }
+        # print("Selected_logits shape", out['selected_logits'].shape)
         return out
     
             
@@ -727,12 +728,12 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             )
         
         for i in range (self.num_feature_levels):
-            selected_logit = self.base_router(x[i]).view(bs, -1, 1).unsqueeze(0)
+            selected_logit = self.base_router(x[i]).view(bs, -1, 1)
             selected_logit =  torch.cat([
                 selected_logit,
-                torch.cat([p_router(x[i]).view(bs, -1, 1).unsqueeze(0) for p_router in self.prompt_router], dim=1)
+                torch.cat([p_router(x[i]).view(bs, -1, 1) for p_router in self.prompt_router], dim=1)
             ], dim=1)
-            selected_logits.append(selected_logit)
+            selected_logits.append(selected_logit.unsqueeze(0))
         selected_logits = torch.cat(selected_logits, dim=0)
         selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
         selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
@@ -769,7 +770,8 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                             torch.cat([p.weight.unsqueeze(1).repeat(1, bs, 1) for p in self.prompt_embed], dim=0)
                         ], dim=0
                     )
-            query_embed = query_embed*selected_prompt_mask
+            if selected_prompt_mask is not None:
+                query_embed = query_embed*selected_prompt_mask
             level_index = i % self.num_feature_levels
             attn_mask[torch.where(attn_mask.sum(-1) == attn_mask.shape[-1])] = False
 
@@ -816,7 +818,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             'pred_logits': predictions_class[-1],
             'pred_masks': predictions_mask[-1],
             'selected_logits': selected_logits,
-            'selected_prompt_mask': selected_prompt_mask
+            'selected_prompt_mask': selected_prompt_mask,
             #'aux_outputs': self._set_aux_loss(
             #    predictions_class if self.mask_classification else None, predictions_mask
             #),
@@ -846,12 +848,15 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             src[-1] = src[-1].permute(2, 0, 1)
 
         if not self.training:
+            print("Run forward_infer")
             return self.forward_infer(x, src, pos, size_list, mask_features)
         else:
             if self.num_prompts > 0 and not self.old_model:
+                print("Run forward_new_train")
                 return self.forward_new_train(x, src, pos, size_list, mask_features)
                 
             else:
+                # print("Run forward_base_train")
                 return self.forward_base_train(x, src, pos, size_list, mask_features)
             
             

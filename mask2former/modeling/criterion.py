@@ -220,11 +220,9 @@ class SetCriterion(nn.Module):
         assert "selected_prompt_mask" in outputs
         
         selected_logits = outputs["selected_logits"]
-        print(selected_logits.requires_grad)
         selected_prompt_mask = outputs["selected_prompt_mask"]
         loss_router = router_loss(selected_logits, selected_prompt_mask)
         losses = {"loss_router": loss_router}
-        print(losses)
         return losses
         
     def _get_src_permutation_idx(self, indices):
@@ -282,7 +280,6 @@ class SetCriterion(nn.Module):
                     l_dict = self.get_loss(loss, aux_outputs, targets, indices, num_masks)
                     l_dict = {k + f"_{i}": v for k, v in l_dict.items()}
                     losses.update(l_dict)
-        print(losses)
         return losses
 
     def __repr__(self):
@@ -363,4 +360,4 @@ class SoftmaxCriterion(SetCriterion):
 
         del src_masks
         del target_masks
-        return losses
+        return losses   

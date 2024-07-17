@@ -38,6 +38,7 @@ class MaskFormerDistillation(BaseDistillation):
         class_weight = cx.CLASS_WEIGHT
         dice_weight = cx.DICE_WEIGHT
         mask_weight = cx.MASK_WEIGHT
+        router_weight = cx.ROUTER_WEIGHT
         self.no_object_weight = no_object_weight
 
         self.use_kd = cfg.CONT.TASK and cfg.CONT.DIST.KD_WEIGHT > 0
@@ -74,7 +75,7 @@ class MaskFormerDistillation(BaseDistillation):
             )
 
         weight_dict = {"loss_ce": class_weight, "loss_mask": mask_weight,
-                       "loss_dice": dice_weight, "loss_kd": self.kd_weight, "loss_mask_kd": cfg.CONT.DIST.MASK_KD,
+                       "loss_dice": dice_weight, "loss_router": router_weight, "loss_kd": self.kd_weight, "loss_mask_kd": cfg.CONT.DIST.MASK_KD,
                        "loss_pod": cfg.CONT.DIST.POD_WEIGHT * (self.new_classes / self.num_classes)**0.5}
 
         if deep_supervision:
@@ -84,7 +85,7 @@ class MaskFormerDistillation(BaseDistillation):
                 aux_weight_dict.update({k + f"_{i}": v for k, v in weight_dict.items()})
             weight_dict.update(aux_weight_dict)
 
-        losses = ["labels", "masks"]
+        losses = ["labels", "masks", "routers"]
 
         criterion = SoftmaxKDSetCriterion if self.softmask else KDSetCriterion
         self.criterion = criterion(
@@ -161,7 +162,7 @@ class MaskFormerDistillation(BaseDistillation):
     def __call__(self, data):
         model_out = self.model(data)
         outputs = model_out['outputs']
-
+        # print("Outputs: ", outputs.keys())
         model_out_old = self.model_old(data) if self.use_kd or self.pseudolabeling else None
         outputs_old = model_out_old['outputs'] if model_out_old is not None else None
 
@@ -194,5 +195,5 @@ class MaskFormerDistillation(BaseDistillation):
             else:
                 # remove this loss if not specified in `weight_dict`
                 losses.pop(k)
-
+        print(losses)
         return losses

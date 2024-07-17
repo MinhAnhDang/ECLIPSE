@@ -3,7 +3,9 @@ from detectron2.config import CfgNode as CN
 
 def add_continual_config(cfg):
     cfg.WANDB = True
-
+    cfg.MODEL.MASK_FORMER.PROMPT_SELECT=True
+    cfg.MODEL.MASK_FORMER.ROUTER_WEIGHT=1.0
+    
     cfg.CONT = CN()
     cfg.CONT.BASE_CLS = 15
     cfg.CONT.INC_CLS = 5
@@ -52,5 +54,4 @@ def add_continual_config(cfg):
     cfg.CONT.PROMPT_NO_OBJ_MLP = False
     cfg.CONT.DEEP_CLS = False
     cfg.CONT.LOGIT_MANI_DELTAS = None
-    cfg.MODEL.MASK_FORMER.PROMPT_SELECT=True
-    cfg.MODEL.MASK_FORMER.ROUTER_WEIGHT=1.0
+

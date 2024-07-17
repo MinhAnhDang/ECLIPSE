@@ -143,16 +143,17 @@ class MaskFormer(nn.Module):
         meta = MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
 
         continual = hasattr(cfg, "CONT")
+        # print("Continual: ", continual)
         if not continual:
             if not cfg.MODEL.MASK_FORMER.PER_PIXEL or not cfg.MODEL.MASK_FORMER.TEST.SEMANTIC_ON:
                 # Loss parameters:
                 criterion = setup_mask_criterion(cfg, sem_seg_head.num_classes)
-                print(criterion)
             else:
                 criterion = nn.CrossEntropyLoss(reduction='mean', ignore_index=meta.ignore_label)
         else:
             criterion = None
-
+        # print("Criterion in config: ",criterion)
+        
         return {
             "backbone": backbone,
             "sem_seg_head": sem_seg_head,
@@ -218,6 +219,7 @@ class MaskFormer(nn.Module):
             else:
                 # remove this loss if not specified in `weight_dict`
                 losses.pop(k)
+        print(losses)
         return losses
 
     def forward_train_pixel(self, images, batched_inputs, outputs):
@@ -319,19 +321,23 @@ class MaskFormer(nn.Module):
 
         features = self.backbone(images.tensor)
         outputs = self.sem_seg_head(features)
-
+        # print("output: ", outputs.keys())
         if self.model_old:
             return {"features": features, "outputs": outputs, "shape": images.tensor.shape[-2:]}
-
+        # print(self.training)
         if self.training:
             if self.criterion is None:
+                print("Return features, outputs, shape")
                 return {"features": features, "outputs": outputs, "shape": images.tensor.shape[-2:]}
             else:
                 if self.per_pixel:
+                    # print("Run forward_train_pixel")
                     return self.forward_train_pixel(images, batched_inputs, outputs)
                 else:
+                    # print("Run forward_train_mask")
                     return self.forward_train_mask(images, batched_inputs, outputs)
         else:
+            # print("Run forward_inference")
             return self.forward_inference(images, batched_inputs, outputs)
 
     @staticmethod
@@ -613,7 +619,6 @@ class MaskFormer(nn.Module):
         result.scores = scores_per_image * mask_scores_per_image
         result.pred_classes = labels_per_image
         return result
-
         
     def freeze_for_prompt_tuning(self, ):
         """

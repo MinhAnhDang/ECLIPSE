@@ -10,6 +10,10 @@ from mask2former.modeling.mask_losses import dice_loss_jit, sigmoid_ce_loss_jit,
     softmax_dice_loss_jit, softmax_ce_loss_jit
 from .loss import *
 
+def router_loss(selected_logits, selected_prompt_mask):
+    negative_logits = 1- selected_logits
+    selected_logits = selected_logits*selected_prompt_mask+negative_logits*(1-selected_prompt_mask)
+    return torch.sum(1-selected_logits)
 
 class KDSetCriterion(SetCriterion):
     def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses,
@@ -156,11 +160,25 @@ class KDSetCriterion(SetCriterion):
         del src_masks
         del target_masks
         return losses
-
+    
+    def loss_routers(self, outputs, targets, indices, num_masks, outputs_old=None):
+        print(outputs.keys())
+        if "selected_logits"  not in outputs:
+            losses = {"loss_router": torch.tensor(0.0, device=outputs['pred_logits'].device)}
+        else: 
+            selected_logits = outputs["selected_logits"]
+            # print("Selected_logits requires_grad: ", selected_logits.requires_grad)
+            selected_prompt_mask = outputs["selected_prompt_mask"]
+            loss_router = router_loss(selected_logits, selected_prompt_mask)
+            losses = {"loss_router": loss_router}
+        print("loss_router", losses)
+        return losses
+    
     def get_loss(self, loss, outputs, targets, indices, num_masks, outputs_old=None):
         loss_map = {
             'labels': self.loss_labels,
             'masks': self.loss_masks,
+            'routers': self.loss_routers
         }
         assert loss in loss_map, f"do you really want to compute {loss} loss?"
         return loss_map[loss](outputs, targets, indices, num_masks, outputs_old)
