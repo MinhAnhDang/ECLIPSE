@@ -327,7 +327,7 @@ class MaskFormer(nn.Module):
         # print(self.training)
         if self.training:
             if self.criterion is None:
-                print("Return features, outputs, shape")
+                # print("Return features, outputs, shape")
                 return {"features": features, "outputs": outputs, "shape": images.tensor.shape[-2:]}
             else:
                 if self.per_pixel:

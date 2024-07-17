@@ -195,5 +195,5 @@ class MaskFormerDistillation(BaseDistillation):
             else:
                 # remove this loss if not specified in `weight_dict`
                 losses.pop(k)
-        print(losses)
+        # print(losses)
         return losses
