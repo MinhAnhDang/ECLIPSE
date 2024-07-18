@@ -167,11 +167,14 @@ class KDSetCriterion(SetCriterion):
             losses = {"loss_router": torch.tensor(0.0, device=outputs['pred_logits'].device)}
         else: 
             selected_logits = outputs["selected_logits"]
-            # print("Selected_logits requires_grad: ", selected_logits.requires_grad)
-            selected_prompt_mask = outputs["selected_prompt_mask"]
-            # print(selected_logits.shape, selected_prompt_mask.shape)
-            loss_router = router_loss(selected_logits, selected_prompt_mask)
-            losses = {"loss_router": loss_router}
+            if selected_logits is not None:
+                # print("Selected_logits requires_grad: ", selected_logits.requires_grad)
+                selected_prompt_mask = outputs["selected_prompt_mask"]
+                # print(selected_logits.shape, selected_prompt_mask.shape)
+                loss_router = router_loss(selected_logits, selected_prompt_mask.transpose(0,1))
+                losses = {"loss_router": loss_router}
+            else:
+                losses = {"loss_router": torch.tensor(0.0, device=outputs['pred_logits'].device)}
         # print("loss_router", losses)
         return losses
     

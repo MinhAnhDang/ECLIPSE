@@ -522,6 +522,8 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         _, bs, _ = src[0].shape
         predictions_class = []
         predictions_mask = []
+        selected_prompt_mask = None
+        selected_logits = None
         
         # QxNxC
         query_embed = self.query_embed.weight.unsqueeze(1).repeat(1, bs, 1)
@@ -592,7 +594,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 predictions_class if self.mask_classification else None, predictions_mask
             ),
             'selected_logits': selected_logits,
-            'selected_prompt_mask': selected_prompt_mask.transpose(0,1),
+            'selected_prompt_mask': selected_prompt_mask,
             # 'query': query_feat,
             'features': mask_features
         }
@@ -609,6 +611,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         predictions_class = []
         predictions_mask = []
         selected_prompt_mask = None
+        selected_logits = None
         
         if self.num_prompts > 0 and self.prompt_no_obj_mlp:
             query_dims = np.cumsum([0, self.num_queries] + [self.num_prompts] * len(self.prompt_embed))
@@ -690,7 +693,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 predictions_class if self.mask_classification else None, predictions_mask
             ),
             'selected_logits': selected_logits,
-            'selected_prompt_mask': selected_prompt_mask.transpose(0,1),
+            'selected_prompt_mask': selected_prompt_mask,
             # 'query': query_feat,
             'features': mask_features
         }
@@ -706,7 +709,8 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         
         predictions_class = []
         predictions_mask = []
-        selected_logits = []
+        selected_prompt_mask = None
+        selected_logits = None
         
         if self.num_prompts > 0:
             mask_embeds = nn.ModuleList([self.mask_embed])
@@ -818,7 +822,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             'pred_logits': predictions_class[-1],
             'pred_masks': predictions_mask[-1],
             'selected_logits': selected_logits,
-            'selected_prompt_mask': selected_prompt_mask.transpose(0,1),
+            'selected_prompt_mask': selected_prompt_mask,
             #'aux_outputs': self._set_aux_loss(
             #    predictions_class if self.mask_classification else None, predictions_mask
             #),
