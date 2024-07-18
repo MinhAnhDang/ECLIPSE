@@ -17,7 +17,7 @@ DATASETS:
   TRAIN: ("myade20k_panoptic_train",)
   TEST: ("myade20k_panoptic_val",)
 SOLVER:
-  IMS_PER_BATCH: 1
+  IMS_PER_BATCH: 8
   BASE_LR: 0.0001
   MAX_ITER: 160000
   WARMUP_FACTOR: 1.0
