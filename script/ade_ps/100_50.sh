@@ -16,7 +16,7 @@ dice_weight=5.0
 mask_weight=5.0
 class_weight=2.0
 router_weight=1.0
-prompt_select=True
+prompt_select=False
 
 base_lr=0.0001
 iter=16000
