@@ -727,17 +727,17 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 ], dim=0
             )
         
-        for i in range (self.num_feature_levels):
-            selected_logit = self.base_router(x[i]).view(bs, -1, 1)
-            selected_logit =  torch.cat([
-                selected_logit,
-                torch.cat([p_router(x[i]).view(bs, -1, 1) for p_router in self.prompt_router], dim=1)
-            ], dim=1)
-            selected_logits.append(selected_logit.unsqueeze(0))
-        selected_logits = torch.cat(selected_logits, dim=0)
-        selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
-        selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
-        output = output*selected_prompt_mask
+            for i in range (self.num_feature_levels):
+                selected_logit = self.base_router(x[i]).view(bs, -1, 1)
+                selected_logit =  torch.cat([
+                    selected_logit,
+                    torch.cat([p_router(x[i]).view(bs, -1, 1) for p_router in self.prompt_router], dim=1)
+                ], dim=1)
+                selected_logits.append(selected_logit.unsqueeze(0))
+            selected_logits = torch.cat(selected_logits, dim=0)
+            selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
+            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
+            output = output*selected_prompt_mask
         
         # prediction heads on learnable query features
         outputs_class, outputs_mask, attn_mask = self.forward_prediction_heads(
