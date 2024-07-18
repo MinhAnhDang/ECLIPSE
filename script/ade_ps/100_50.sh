@@ -16,7 +16,7 @@ dice_weight=5.0
 mask_weight=5.0
 class_weight=2.0
 router_weight=1.0
-prompt_select=False
+prompt_select=True
 
 base_lr=0.0001
 iter=16000
@@ -32,7 +32,7 @@ weight_args="MODEL.MASK_FORMER.PROMPT_SELECT ${prompt_select} MODEL.MASK_FORMER.
 exp_name="adps_100_50"
 
 comm_args="OUTPUT_DIR ${base} ${meth_args} ${step_args} ${weight_args}"
-inc_args="CONT.TASK 0 SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 500 SOLVER.CHECKPOINT_PERIOD 1000 SOLVER.MAX_ITER ${iter}"
+inc_args="CONT.TASK 0 SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 4000 SOLVER.CHECKPOINT_PERIOD 1000 SOLVER.MAX_ITER ${iter}"
 
 # Train base classes
 # You can skip this process if you have a step0-checkpoint.

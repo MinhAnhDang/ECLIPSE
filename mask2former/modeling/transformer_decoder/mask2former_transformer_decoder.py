@@ -855,11 +855,11 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             src[-1] = src[-1].permute(2, 0, 1)
 
         if not self.training:
-            print("Run forward_infer")
+            # print("Run forward_infer")
             return self.forward_infer(x, src, pos, size_list, mask_features)
         else:
             if self.num_prompts > 0 and not self.old_model:
-                print("Run forward_new_train")
+                # print("Run forward_new_train")
                 return self.forward_new_train(x, src, pos, size_list, mask_features)
                 
             else:
