@@ -341,11 +341,6 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         self.query_feat = nn.Embedding(num_queries, hidden_dim)
         # learnable query p.e.
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
-        #Router for image-wise seletecting prompts
-        self.base_router = nn.Sequential(
-            nn.Conv2d(hidden_dim, num_queries, kernel_size=3),
-            nn.AdaptiveAvgPool2d((1,1))
-        )
         
         # Parameters for ECLIPSE
         self.num_prompts = num_prompts
@@ -367,7 +362,12 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         assert len(self.deltas) == len(classes), "CONT."
         
         self.old_model = False
-        
+        #Router for image-wise seletecting prompts
+        if self.prompt_select:
+            self.base_router = nn.Sequential(
+                nn.Conv2d(hidden_dim, num_queries, kernel_size=3),
+                nn.AdaptiveAvgPool2d((1,1))
+            )
         # prompt embeddings
         if self.num_prompts > 0:
             # if self.clip_embedding:
@@ -731,17 +731,18 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 ], dim=0
             )
         
-            for i in range (self.num_feature_levels):
-                selected_logit = self.base_router(x[i]).view(bs, -1, 1)
+        for i in range (self.num_feature_levels):
+            selected_logit = self.base_router(x[i]).view(bs, -1, 1)
+            if self.num_prompts > 0:
                 selected_logit =  torch.cat([
                     selected_logit,
                     torch.cat([p_router(x[i]).view(bs, -1, 1) for p_router in self.prompt_router], dim=1)
                 ], dim=1)
-                selected_logits.append(selected_logit.unsqueeze(0))
-            selected_logits = torch.cat(selected_logits, dim=0)
-            selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
-            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
-            output = output*selected_prompt_mask
+            selected_logits.append(selected_logit.unsqueeze(0))
+        selected_logits = torch.cat(selected_logits, dim=0)
+        selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
+        selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
+        output = output*selected_prompt_mask
         
         # prediction heads on learnable query features
         outputs_class, outputs_mask, attn_mask = self.forward_prediction_heads(
