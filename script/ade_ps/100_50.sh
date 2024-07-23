@@ -36,7 +36,7 @@ inc_args="CONT.TASK 0 SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 4000 SOLVER.CHE
 
 # Train base classes
 # You can skip this process if you have a step0-checkpoint.
-python train_inc.py --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} NAME ${exp_name} WANDB False
+# python train_inc.py --num-gpus ${ngpus} --config-file ${cfg_file} ${comm_args} ${inc_args} NAME ${exp_name} WANDB False
 
 
 # --------------------------------------
@@ -62,12 +62,13 @@ query_embed_freeze=True
 prompt_deep=True
 prompt_mask_mlp=True
 prompt_no_obj_mlp=False
+prompt_select=True
 
 deltas=[0.6,-0.6]
 
 deep_cls=True
 
-weight_args="MODEL.MASK_FORMER.NUM_OBJECT_QUERIES ${base_queries} MODEL.MASK_FORMER.DICE_WEIGHT ${dice_weight} MODEL.MASK_FORMER.MASK_WEIGHT ${mask_weight} MODEL.MASK_FORMER.CLASS_WEIGHT ${class_weight} MODEL.MASK_FORMER.SOFTMASK ${soft_mask} CONT.SOFTCLS ${soft_cls} CONT.NUM_PROMPTS ${num_prompts}"
+weight_args="MODEL.MASK_FORMER.PROMPT_SELECT ${prompt_select} MODEL.MASK_FORMER.NUM_OBJECT_QUERIES ${base_queries} MODEL.MASK_FORMER.DICE_WEIGHT ${dice_weight} MODEL.MASK_FORMER.MASK_WEIGHT ${mask_weight} MODEL.MASK_FORMER.CLASS_WEIGHT ${class_weight} MODEL.MASK_FORMER.SOFTMASK ${soft_mask} CONT.SOFTCLS ${soft_cls} CONT.NUM_PROMPTS ${num_prompts}"
 comm_args="OUTPUT_DIR ${base} ${meth_args} ${step_args} ${weight_args}"
 
 inc_args="CONT.TASK 1 SOLVER.MAX_ITER ${iter} SOLVER.BASE_LR ${base_lr} TEST.EVAL_PERIOD 4000 SOLVER.CHECKPOINT_PERIOD 500000 CONT.WEIGHTS results/ade_ps_100_step0.pth"

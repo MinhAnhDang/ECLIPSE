@@ -370,18 +370,6 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             )
         # prompt embeddings
         if self.num_prompts > 0:
-            # if self.clip_embedding:
-            #     print("Load CLIP embedding")
-            #     prompt_feat = []
-            #     embeds = torch.load("clip_text_embeds.pt")
-            #     print(embeds)
-            #     prompt_dims = np.cumsum(classes)
-            #     for index in range(1, len(prompt_dims)):
-            #         pretrained_feat = embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :] if (classes[1] - classes[0]) > 5 else embeds[prompt_dims[index-1]+1:prompt_dims[index]+1, :]*2
-            #         prompt_feat.append(nn.Embedding.from_pretrained(pretrained_feat))
-            #     self.prompt_feat = nn.ModuleList(prompt_feat)
-            #     print(self.prompt_feat)
-            # else:
             if self.prompt_select:
                 self.prompt_router = nn.ModuleList([
                     nn.Sequential(
@@ -393,7 +381,6 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             self.prompt_feat = nn.ModuleList(
                 [nn.Embedding(num_prompts, hidden_dim) for _ in classes[1:]]
             )
-                # print(prompt_feat)
             
             if self.prompt_deep:
                 self.prompt_embed = nn.ModuleList(
@@ -409,7 +396,6 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                     [nn.Embedding(num_prompts, hidden_dim) for _ in classes[1:]]
                 )
 
-        # level embedding (we always use 3 scales)
         self.num_feature_levels = 3
         self.level_embed = nn.Embedding(self.num_feature_levels, hidden_dim)
         self.input_proj = nn.ModuleList()
@@ -855,15 +841,12 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             src[-1] = src[-1].permute(2, 0, 1)
 
         if not self.training:
-            # print("Run forward_infer")
             return self.forward_infer(x, src, pos, size_list, mask_features)
         else:
             if self.num_prompts > 0 and not self.old_model:
-                # print("Run forward_new_train")
                 return self.forward_new_train(x, src, pos, size_list, mask_features)
                 
             else:
-                # print("Run forward_base_train")
                 return self.forward_base_train(x, src, pos, size_list, mask_features)
             
             
