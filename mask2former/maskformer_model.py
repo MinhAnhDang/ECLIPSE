@@ -211,15 +211,15 @@ class MaskFormer(nn.Module):
 
         # bipartite matching-based loss
         losses = self.criterion(outputs, targets)
-        print("loss",losses)
-        print("weight_dict", self.criterion.weight_dict)
+        # print("loss",losses)
+        # print("weight_dict", self.criterion.weight_dict)
         for k in list(losses.keys()):
             if k in self.criterion.weight_dict:
                 losses[k] *= self.criterion.weight_dict[k]
             else:
                 # remove this loss if not specified in `weight_dict`
                 losses.pop(k)
-        print(losses)
+        # print(losses)
         return losses
 
     def forward_train_pixel(self, images, batched_inputs, outputs):
@@ -440,7 +440,7 @@ class MaskFormer(nn.Module):
         cur_classes = labels[keep]
         cur_masks = mask_pred[keep]
         cur_mask_cls = mask_cls[keep]
-        cur_mask_cls = cur_mask_cls[:, :-1]
+        cur_mask_cls = cur_mask_cls[:, :-1] #remove logit of bkg class
 
         cur_prob_masks = cur_scores.view(-1, 1, 1) * cur_masks
 

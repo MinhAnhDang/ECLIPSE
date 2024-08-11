@@ -13,7 +13,8 @@ from .loss import *
 def router_loss(selected_logits, selected_prompt_mask):
     negative_logits = 1- selected_logits
     selected_logits = selected_logits*selected_prompt_mask+negative_logits*(1-selected_prompt_mask)
-    return torch.sum(1-selected_logits)
+    selected_logits = selected_logits.clamp(0.001, 0.999)
+    return -torch.sum(torch.log(selected_logits))
 
 class KDSetCriterion(SetCriterion):
     def __init__(self, num_classes, matcher, weight_dict, eos_coef, losses,
@@ -63,7 +64,10 @@ class KDSetCriterion(SetCriterion):
         )
         target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
         target_classes[idx] = target_classes_o  # put real classes inside (substitute NO_CLASS with real)
-
+        # print(src_logits)
+        # print(src_logits.shape)
+        # print(src_logits.transpose(1, 2).shape)
+        # print(target_classes)
         if self.uce and self.focal:
             loss_ce = focal_uce_loss(src_logits.transpose(1, 2), target_classes,
                                      old_cl=self.old_classes,  gamma=self.focal_gamma, alpha=self.focal_alpha)

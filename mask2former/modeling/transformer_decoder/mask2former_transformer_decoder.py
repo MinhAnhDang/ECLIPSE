@@ -294,6 +294,7 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
         assert mask_classification, "Only support mask classification model"
         self.mask_classification = mask_classification
         self.softmask = softmask
+        
 
         # positional encoding
         N_steps = hidden_dim // 2
@@ -436,7 +437,13 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             self.prompt_no_obj_embed = nn.ModuleList(
                 [MLP(hidden_dim, hidden_dim, 1, 3) for _ in classes[1:]]
             )
-            
+        if self.num_prompts > 0:
+            frequency_length = num_prompts
+        else:
+            frequency_length = num_queries
+        self.register_buffer('frequency_table', torch.zeros(frequency_length, 1), False)
+        self.register_buffer('total_inputs', torch.tensor(1), False)    
+        
     def set_as_old_model(self, ):
         self.old_model = True
         self.prompt_feat = None
@@ -524,11 +531,19 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 selected_logits.append(self.base_router(x[i]).view(bs, -1, 1).unsqueeze(0))
             selected_logits = torch.cat(selected_logits, dim=0)
             # print("selected_logits shape:",selected_logits.shape)
-            selected_logits = torch.mean(selected_logits, dim=0).sigmoid() 
-            
-            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1) #NQ1->QN1
+            selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
+            selected_prompt_mask = selected_logits*(1.0 - self.frequency_table/self.total_inputs)**2
+            _, indices = selected_prompt_mask.topk(int(self.num_queries/2), dim=1)
+            selected_prompt_mask = selected_prompt_mask.scatter(1, indices, 1)
+            selected_prompt_mask =  torch.where(selected_prompt_mask<1, 0, selected_prompt_mask)
+            selected_prompt_mask = selected_prompt_mask.int().transpose(0,1) #NQ1->QN1
             # print(selected_prompt_mask.shape)
             # print("query shape:",query_embed.shape)
+            self.frequency_table +=selected_prompt_mask.sum(dim=1)
+            self.total_inputs += bs
+            # print("Selected logits:", selected_logits)
+            # print("Frequency", self.frequency_table)
+            # print("Total inputs", self.total_inputs)
             
             query_embed = query_embed*selected_prompt_mask
             output = output*selected_prompt_mask
@@ -538,6 +553,11 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             output, self.class_embed, self.mask_embed, mask_features, 
             attn_mask_target_size=size_list[0], 
         )
+        if self.prompt_select:
+            mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class.shape[2])
+            mask[:,:,-1] = 0
+            outputs_class[mask.bool()] = -10
+            
         predictions_class.append(outputs_class)
         predictions_mask.append(outputs_mask)
 
@@ -569,10 +589,13 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 output, self.class_embed, self.mask_embed, mask_features, 
                 attn_mask_target_size=size_list[(i + 1) % self.num_feature_levels],
             )
-
+            if self.prompt_select:
+                mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class.shape[2])
+                mask[:,:,-1] = 0
+                outputs_class[mask.bool()] = -10   
+                
             predictions_class.append(outputs_class)
-            predictions_mask.append(outputs_mask)
-            
+            predictions_mask.append(outputs_mask)  
         out = {
             'pred_logits': predictions_class[-1],
             'pred_masks': predictions_mask[-1],
@@ -610,8 +633,19 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             for i in range(self.num_feature_levels):
                 selected_logits.append(self.prompt_router[-1](x[i]).view(bs, -1, 1).unsqueeze(0))
             selected_logits = torch.cat(selected_logits, dim=0)
-            selected_logits = torch.mean(selected_logits, dim=0).sigmoid() 
-            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
+            selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
+            selected_prompt_mask = selected_logits*(1.0 - self.frequency_table/self.total_inputs)**2
+            _, indices = selected_prompt_mask.topk(int(self.num_prompts/2), dim=1)
+            selected_prompt_mask = selected_prompt_mask.scatter(1, indices, 1)
+            selected_prompt_mask =  torch.where(selected_prompt_mask<1, 0, selected_prompt_mask)
+            selected_prompt_mask = selected_prompt_mask.int().transpose(0,1) #NQ1->QN1
+            
+            self.frequency_table +=selected_prompt_mask.sum(dim=1)
+            self.total_inputs += bs
+            # print("Selected logits:", selected_logits)
+            # print("Frequency", self.frequency_table)
+            # print("Total inputs", self.total_inputs)
+            
             output_p = output_p*selected_prompt_mask
             
         # prediction heads on learnable query features
@@ -623,6 +657,10 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             attn_mask_target_size=size_list[0],
             qdims=query_dims,
         )
+        if self.prompt_select:
+            mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class_p.shape[2])
+            mask[:,:,-1] = 0
+            outputs_class_p[mask.bool()] = -10
 
         predictions_class.append(outputs_class_p)
         predictions_mask.append(outputs_mask_p)
@@ -667,11 +705,14 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 mask_features, 
                 attn_mask_target_size=size_list[(i + 1) % self.num_feature_levels],
                 qdims=query_dims,
-            )
+            )            
+        if self.prompt_select:
+            mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class_p.shape[2])
+            mask[:,:,-1] = 0
+            outputs_class_p[mask.bool()] = -10
 
         predictions_class.append(outputs_class_p)
         predictions_mask.append(outputs_mask_p)
-        
         out = {
             'pred_logits': predictions_class[-1],
             'pred_masks': predictions_mask[-1],
@@ -729,7 +770,11 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 selected_logits.append(selected_logit.unsqueeze(0))
             selected_logits = torch.cat(selected_logits, dim=0)
             selected_logits = torch.mean(selected_logits, dim=0).sigmoid()
-            selected_prompt_mask = (selected_logits>0.5).int().transpose(0,1)
+            selected_prompt_mask = selected_logits*(1.0 - self.frequency_table/self.total_inputs)**2
+            _, indices = selected_prompt_mask.topk(int(self.num_classes/2), dim=1)
+            selected_prompt_mask = selected_prompt_mask.scatter(1, indices, 1)
+            selected_prompt_mask =  torch.where(selected_prompt_mask<1, 0, selected_prompt_mask)
+            selected_prompt_mask = selected_prompt_mask.int().transpose(0,1) #NQ1->QN1
             output = output*selected_prompt_mask
         
         # prediction heads on learnable query features
@@ -741,7 +786,11 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             attn_mask_target_size=size_list[0], 
             qdims=query_dims,
         )
-        
+        if self.prompt_select:
+            mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class.shape[2])
+            mask[:,:,-1] = 0
+            outputs_class[mask.bool()] = -10
+
         predictions_class.append(outputs_class)
         predictions_mask.append(outputs_mask)
 
@@ -804,6 +853,11 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 attn_mask_target_size=size_list[(i + 1) % self.num_feature_levels],
                 qdims=query_dims,
             )
+            if self.prompt_select:
+                mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class.shape[2])
+                mask[:,:,-1] = 0
+                outputs_class[mask.bool()] = -10
+            
             predictions_class.append(outputs_class)
             predictions_mask.append(outputs_mask)
             
