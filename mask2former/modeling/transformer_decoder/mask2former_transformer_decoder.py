@@ -557,6 +557,9 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class.shape[2])
             mask[:,:,-1] = 0
             outputs_class[mask.bool()] = -10
+            mask[:,:,:-1] = 0
+            mask[:,:,-1] = 1
+            outputs_class[mask.bool()] = 10
             
         predictions_class.append(outputs_class)
         predictions_mask.append(outputs_mask)
@@ -592,7 +595,10 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             if self.prompt_select:
                 mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class.shape[2])
                 mask[:,:,-1] = 0
-                outputs_class[mask.bool()] = -10   
+                outputs_class[mask.bool()] = -10  
+                mask[:,:,:-1] = 0
+                mask[:,:,-1] = 1
+                outputs_class[mask.bool()] = 10 
                 
             predictions_class.append(outputs_class)
             predictions_mask.append(outputs_mask)  
@@ -661,6 +667,9 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class_p.shape[2])
             mask[:,:,-1] = 0
             outputs_class_p[mask.bool()] = -10
+            mask[:,:,:-1] = 0
+            mask[:,:,-1] = 1
+            outputs_class_p[mask.bool()] = 10
 
         predictions_class.append(outputs_class_p)
         predictions_mask.append(outputs_mask_p)
@@ -710,6 +719,9 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class_p.shape[2])
             mask[:,:,-1] = 0
             outputs_class_p[mask.bool()] = -10
+            mask[:,:,:-1] = 0
+            mask[:,:,-1] = 1
+            outputs_class_p[mask.bool()] = 10
 
         predictions_class.append(outputs_class_p)
         predictions_mask.append(outputs_mask_p)
@@ -790,6 +802,9 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
             mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class.shape[2])
             mask[:,:,-1] = 0
             outputs_class[mask.bool()] = -10
+            mask[:,:,:-1] = 0
+            mask[:,:,-1] = 1
+            outputs_class[mask.bool()] = 10
 
         predictions_class.append(outputs_class)
         predictions_mask.append(outputs_mask)
@@ -857,6 +872,9 @@ class MultiScaleMaskedTransformerDecoder(nn.Module):
                 mask = selected_prompt_mask.transpose(0,1).repeat(1,1,outputs_class.shape[2])
                 mask[:,:,-1] = 0
                 outputs_class[mask.bool()] = -10
+                mask[:,:,:-1] = 0
+                mask[:,:,-1] = 1
+                outputs_class[mask.bool()] = 10
             
             predictions_class.append(outputs_class)
             predictions_mask.append(outputs_mask)
